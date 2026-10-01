@@ -4,6 +4,5 @@ import { Component } from '@angular/core';
   selector: 'app-movie-search',
   imports: [],
   templateUrl: './movie-search.html',
-  styleUrl: './movie-search.css',
 })
-export class MovieSearch {}
+export class MovieSearchComponent {}

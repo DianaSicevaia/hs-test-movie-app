@@ -4,6 +4,5 @@ import { Component } from '@angular/core';
   selector: 'app-movie-card',
   imports: [],
   templateUrl: './movie-card.html',
-  styleUrl: './movie-card.css',
 })
-export class MovieCard {}
+export class MovieCardComponent {}
