@@ -1,5 +1,5 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import {
   provideRouter,
   withComponentInputBinding,
@@ -7,11 +7,12 @@ import {
 } from '@angular/router';
 
 import { routes } from './app.routes';
+import { tmdbAuthInterceptor } from './core/interceptors/tmdb-auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
-    provideHttpClient(withFetch()),
+    provideHttpClient(withFetch(), withInterceptors([tmdbAuthInterceptor])),
     provideRouter(
       routes,
       withComponentInputBinding(),

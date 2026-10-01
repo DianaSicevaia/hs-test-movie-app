@@ -1,1 +1,33 @@
-<p>movie-list works!</p>
+<section>
+  <h1 class="mb-6 text-2xl font-bold">Popular movies</h1>
+
+  @if (loading()) {
+    <div class="flex justify-center p-20" role="status">
+      <span
+        class="size-10 animate-spin rounded-full border-4 border-gray-600 border-t-amber-600"
+      ></span>
+      <span class="sr-only">Loading…</span>
+    </div>
+  } @else if (error(); as message) {
+    <div class="rounded-lg border bg-red-500/10 p-6 text-center">
+      <p class="text-red-300">{{ message }}</p>
+      <button
+        type="button"
+        (click)="loadMovies()"
+        class="mt-4 rounded-md bg-amber-600 px-4 py-2 font-medium text-white hover:bg-amber-500"
+      >
+        Try again
+      </button>
+    </div>
+  } @else if (movies().length === 0) {
+    <p class="p-20 text-center text-gray-400">No movies found.</p>
+  } @else {
+    <ul class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      @for (movie of movies(); track movie.id) {
+        <li>
+          <app-movie-card [movie]="movie" />
+        </li>
+      }
+    </ul>
+  }
+</section>
