@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, numberAttribute } from '@angular/core';
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, Location } from '@angular/common';
 import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
@@ -17,6 +17,7 @@ export class MovieDetailComponent {
   private readonly movieService = inject(MovieService);
   private readonly router = inject(Router);
   private readonly title = inject(Title);
+  private readonly location = inject(Location);
 
   readonly id = input.required({ transform: numberAttribute });
 
@@ -32,6 +33,10 @@ export class MovieDetailComponent {
   );
   protected readonly runtime = computed(() => formatRuntime(this.movie()?.runtime));
 
+  // Check if there is a previous page in the navigation history and start from the root if not.
+  // For cases when user opens a movie detail page directly from a link.
+  private readonly hasPreviousPage = !!this.router.currentNavigation()?.previousNavigation;
+
   constructor() {
     effect(() => this.loadMovie());
 
@@ -46,7 +51,11 @@ export class MovieDetailComponent {
   }
 
   protected goBack(): void {
-    this.router.navigate(['/']);
+    if (this.hasPreviousPage) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/']);
+    }
   }
 }
 
