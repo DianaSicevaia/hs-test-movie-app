@@ -1,11 +1,13 @@
 import { Component, OnInit, inject } from '@angular/core';
 
 import { MovieService } from '../../../core/services/movie.service';
+import { ErrorMessageComponent } from '../../../shared/ui/error-message/error-message';
+import { LoadingSpinnerComponent } from '../../../shared/ui/loading-spinner/loading-spinner';
 import { MovieCardComponent } from '../movie-card/movie-card';
 
 @Component({
   selector: 'app-movie-list',
-  imports: [MovieCardComponent],
+  imports: [MovieCardComponent, LoadingSpinnerComponent, ErrorMessageComponent],
   templateUrl: './movie-list.html',
 })
 export class MovieListComponent implements OnInit {
