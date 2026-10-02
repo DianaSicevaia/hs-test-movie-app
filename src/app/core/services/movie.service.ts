@@ -1,6 +1,6 @@
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { Subscription, finalize } from 'rxjs';
+import { Observable, Subscription, finalize } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { Movie, MovieDetails, PaginatedResponse } from '../models/movie';
@@ -20,6 +20,13 @@ export class MovieService {
   readonly loading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
 
+  // Current search keyword; empty means the popular list is shown.
+  // Kept in the service so results survive navigating to details and back.
+  private readonly querySignal = signal('');
+  readonly query = this.querySignal.asReadonly();
+
+  private listRequest?: Subscription;
+
   // Details state is separate from the list, so opening a movie doesn't reset the list
   private readonly movieDetailsSignal = signal<MovieDetails | null>(null);
   private readonly detailsLoadingSignal = signal(false);
@@ -32,19 +39,40 @@ export class MovieService {
   private detailsRequest?: Subscription;
 
   getPopularMovies(): void {
+    this.querySignal.set('');
+    this.loadList(this.http.get<PaginatedResponse<Movie>>(`${this.apiUrl}/movie/popular`));
+  }
+
+  searchMovies(keyword: string): void {
+    const query = keyword.trim();
+
+    if (!query) {
+      this.getPopularMovies();
+      return;
+    }
+
+    this.querySignal.set(query);
+    const params = new HttpParams().set('query', query);
+    this.loadList(
+      this.http.get<PaginatedResponse<Movie>>(`${this.apiUrl}/search/movie`, { params }),
+    );
+  }
+
+  private loadList(request$: Observable<PaginatedResponse<Movie>>): void {
+    // Cancel the previous request: while typing, an older slow response
+    // must not overwrite the results for the newer keyword
+    this.listRequest?.unsubscribe();
+
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
-    this.http
-      .get<PaginatedResponse<Movie>>(`${this.apiUrl}/movie/popular`)
-      .pipe(finalize(() => this.loadingSignal.set(false)))
-      .subscribe({
-        next: (response) => this.moviesSignal.set(response.results),
-        error: (err: HttpErrorResponse) => {
-          this.moviesSignal.set([]);
-          this.errorSignal.set(toErrorMessage(err));
-        },
-      });
+    this.listRequest = request$.pipe(finalize(() => this.loadingSignal.set(false))).subscribe({
+      next: (response) => this.moviesSignal.set(response.results),
+      error: (err: HttpErrorResponse) => {
+        this.moviesSignal.set([]);
+        this.errorSignal.set(toErrorMessage(err));
+      },
+    });
   }
 
   getMovieDetails(id: number): void {
