@@ -1,0 +1,1 @@
+import{Na as i,Oa as n,Ua as a,xa as o}from"./chunk-3CLNOPXT.js";var m=class t{static \u0275fac=function(e){return new(e||t)};static \u0275cmp=o({type:t,selectors:[["app-movie-detail"]],decls:2,vars:0,template:function(e,p){e&1&&(i(0,"p"),a(1,"movie-detail works!"),n())},encapsulation:2})};export{m as MovieDetailComponent};
