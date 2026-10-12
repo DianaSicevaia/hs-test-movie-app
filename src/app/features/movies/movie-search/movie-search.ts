@@ -12,7 +12,11 @@ export class MovieSearchComponent {
   readonly initialQuery = input('');
   readonly queryChange = output<string>();
 
-  protected readonly query = linkedSignal(() => this.initialQuery());
+  protected readonly query = linkedSignal<string, string>({
+    source: this.initialQuery,
+    computation: (source, previous) =>
+      previous && previous.value.trim() === source ? previous.value : source,
+  });
   private readonly submit$ = new Subject<string>();
 
   constructor() {
