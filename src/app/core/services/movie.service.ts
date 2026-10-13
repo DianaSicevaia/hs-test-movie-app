@@ -1,8 +1,9 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, Subscription, finalize } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
+import { ApiError } from '../models/api-error';
 import { Movie, MovieDetails, PaginatedResponse } from '../models/movie';
 
 @Injectable({
@@ -68,9 +69,9 @@ export class MovieService {
 
     this.listRequest = request$.pipe(finalize(() => this.loadingSignal.set(false))).subscribe({
       next: (response) => this.moviesSignal.set(response.results),
-      error: (err: HttpErrorResponse) => {
+      error: (err: unknown) => {
         this.moviesSignal.set([]);
-        this.errorSignal.set(toErrorMessage(err));
+        this.errorSignal.set(getErrorMessage(err));
       },
     });
   }
@@ -88,20 +89,17 @@ export class MovieService {
       .pipe(finalize(() => this.detailsLoadingSignal.set(false)))
       .subscribe({
         next: (movie) => this.movieDetailsSignal.set(movie),
-        error: (err: HttpErrorResponse) => this.detailsErrorSignal.set(toErrorMessage(err)),
+        error: (err: unknown) =>
+          this.detailsErrorSignal.set(
+            err instanceof ApiError && err.status === 404
+              ? 'Movie not found.'
+              : getErrorMessage(err),
+          ),
       });
   }
 }
 
-function toErrorMessage(err: HttpErrorResponse): string {
-  switch (err.status) {
-    case 0:
-      return 'Network error. Check your internet connection.';
-    case 401:
-      return 'Invalid API token. Check TMDB_ACCESS_TOKEN in .env.';
-    case 404:
-      return 'Movie not found.';
-    default:
-      return 'Something went wrong. Please try again later.';
-  }
+// generic fallback
+function getErrorMessage(err: unknown): string {
+  return err instanceof ApiError ? err.message : 'Something went wrong. Please try again later.';
 }

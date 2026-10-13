@@ -5,3 +5,17 @@
     @apply bg-gray-800 text-slate-100;
   }
 }
+
+/* for app-progress-bar */
+@theme {
+  --animate-progress: progress 1.2s ease-in-out infinite;
+
+  @keyframes progress {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+}
