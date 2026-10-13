@@ -131,11 +131,15 @@ Open http://localhost:4200.
 src/app/
 ├── core/                         # App-wide singletons and non-UI code
 │   ├── interceptors/
-│   │   └── tmdb-auth.interceptor.ts   # Adds the Bearer token to TMDb requests
+│   │   ├── tmdb-auth.interceptor.ts   # Adds the Bearer token to TMDb requests
+│   │   ├── loading.interceptor.ts     # Counts requests in flight (global progress bar)
+│   │   └── error.interceptor.ts       # HttpErrorResponse → ApiError with a readable message
 │   ├── models/
-│   │   └── movie.ts                   # TMDb response types
+│   │   ├── movie.ts                   # TMDb response types
+│   │   └── api-error.ts               # Normalized HTTP error
 │   ├── services/
-│   │   └── movie.service.ts           # API calls + signal-based state
+│   │   ├── movie.service.ts           # API calls + signal-based state
+│   │   └── loading.service.ts         # Global "requests in flight" signal
 │   └── utils/
 │       └── tmdb-image.ts              # Poster / backdrop URL helpers
 │
@@ -151,9 +155,10 @@ src/app/
 │   │   └── long-press.directive.ts    # Long press for touch devices
 │   └── ui/
 │       ├── loading-spinner/
-│       └── error-message/
+│       ├── error-message/
+│       └── progress-bar/              # Thin top bar driven by LoadingService
 │
-├── app.config.ts                 # Providers: router, HttpClient, interceptor
+├── app.config.ts                 # Providers: router, HttpClient, interceptors
 ├── app.routes.ts                 # Lazy routes: "" and "movie/:id"
 └── app.ts / app.html             # Layout: header, router outlet, footer
 ```
@@ -209,6 +214,23 @@ Each new list or details request **cancels the previous one**. If you type quick
 ```ts
 readonly id = input.required({ transform: numberAttribute });
 ```
+
+### HTTP interceptors
+
+Interceptors handle cross-cutting concerns. Feature state stays in the service:
+
+```ts
+withInterceptors([tmdbAuthInterceptor, loadingInterceptor, errorInterceptor]);
+```
+
+- **`loadingInterceptor`** counts requests in flight in `LoadingService`, and a thin progress bar under the header shows the result.
+  - `finalize` decrements the counter on success, on error **and on cancellation**, so cancelled search requests don't leave the bar stuck.
+  - The bar appears with a short delay, so fast requests don't make it flash.
+- **`errorInterceptor`** turns every `HttpErrorResponse` into an `ApiError { status, message }` with a user-friendly message. Error texts live in one place instead of in every service.
+
+`MovieService` still has its own `loading` and `error` signals for each area (list / details). That way the list can dim old results while a search is loading, and the details page can show its own spinner.
+
+Some decisions depend on context, so the service makes them itself. For example, a 404 from `/movie/{id}` means **"Movie not found."**.
 
 ### API token
 
