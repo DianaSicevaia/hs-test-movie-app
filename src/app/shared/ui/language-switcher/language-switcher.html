@@ -1,0 +1,19 @@
+<div
+  role="group"
+  [attr.aria-label]="t().language"
+  class="flex overflow-hidden rounded-md border border-gray-600 text-xs font-semibold"
+>
+  @for (language of languageService.languages; track language.code) {
+    <button
+      type="button"
+      (click)="languageService.setLanguage(language.code)"
+      [attr.aria-pressed]="language.code === currentLanguage()"
+      [attr.aria-label]="language.label"
+      [attr.lang]="language.code"
+      [title]="language.label"
+      class="cursor-pointer px-2.5 py-1.5 text-gray-300 transition-colors hover:bg-gray-700 hover:text-white focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-500 aria-pressed:bg-amber-600 aria-pressed:text-white aria-pressed:hover:bg-amber-600"
+    >
+      {{ language.shortLabel }}
+    </button>
+  }
+</div>

@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+
+import { LanguageService } from '../../../core/i18n/language.service';
 
 @Component({
   selector: 'app-loading-spinner',
@@ -7,8 +9,10 @@ import { Component } from '@angular/core';
       <span
         class="size-10 animate-spin rounded-full border-4 border-gray-600 border-t-amber-600"
       ></span>
-      <span class="sr-only">Loading…</span>
+      <span class="sr-only">{{ t().common.loading }}</span>
     </div>
   `,
 })
-export class LoadingSpinnerComponent {}
+export class LoadingSpinnerComponent {
+  protected readonly t = inject(LanguageService).t;
+}

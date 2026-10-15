@@ -1,8 +1,9 @@
 import { Component, computed, effect, inject, input, numberAttribute } from '@angular/core';
-import { DatePipe, DecimalPipe, Location } from '@angular/common';
+import { DecimalPipe, Location } from '@angular/common';
 import { Title } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 
+import { LanguageService } from '../../core/i18n/language.service';
 import { MovieService } from '../../core/services/movie.service';
 import { getBackdropUrl, getPosterUrl } from '../../core/utils/tmdb-image';
 import { ErrorMessageComponent } from '../../shared/ui/error-message/error-message';
@@ -10,16 +11,19 @@ import { LoadingSpinnerComponent } from '../../shared/ui/loading-spinner/loading
 
 @Component({
   selector: 'app-movie-detail',
-  imports: [DatePipe, DecimalPipe, LoadingSpinnerComponent, ErrorMessageComponent],
+  imports: [DecimalPipe, LoadingSpinnerComponent, ErrorMessageComponent],
   templateUrl: './movie-detail.html',
 })
 export class MovieDetailComponent {
   private readonly movieService = inject(MovieService);
+  private readonly languageService = inject(LanguageService);
   private readonly router = inject(Router);
   private readonly title = inject(Title);
   private readonly location = inject(Location);
 
   readonly id = input.required({ transform: numberAttribute });
+
+  protected readonly t = this.languageService.t;
 
   protected readonly movie = this.movieService.movieDetails;
   protected readonly loading = this.movieService.detailsLoading;
@@ -31,14 +35,38 @@ export class MovieDetailComponent {
   protected readonly backdropUrl = computed(() =>
     getBackdropUrl(this.movie()?.backdrop_path ?? null),
   );
-  protected readonly runtime = computed(() => formatRuntime(this.movie()?.runtime));
+
+  protected readonly runtime = computed(() => {
+    const minutes = this.movie()?.runtime;
+    return minutes ? this.t().movie.runtimeValue(Math.floor(minutes / 60), minutes % 60) : null;
+  });
+
+  // Dates and numbers are formatted with Intl for the current language
+  // Angular's DatePipe would need locale data registered for every language =(
+  protected readonly releaseDate = computed(() => {
+    const date = this.movie()?.release_date;
+    if (!date) return null;
+
+    // TMDb sends "YYYY-MM-DD", which JS parses as UTC — format in UTC too, or the day can shift
+    return new Intl.DateTimeFormat(this.languageService.locale(), {
+      dateStyle: 'long',
+      timeZone: 'UTC',
+    }).format(new Date(date));
+  });
+
+  protected readonly voteCount = computed(() =>
+    new Intl.NumberFormat(this.languageService.locale()).format(this.movie()?.vote_count ?? 0),
+  );
 
   // Check if there is a previous page in the navigation history and start from the root if not.
   // For cases when user opens a movie detail page directly from a link.
   private readonly hasPreviousPage = !!this.router.currentNavigation()?.previousNavigation;
 
   constructor() {
-    effect(() => this.loadMovie());
+    effect(() => {
+      this.languageService.language();
+      this.loadMovie();
+    });
 
     effect(() => {
       const movie = this.movie();
@@ -57,12 +85,4 @@ export class MovieDetailComponent {
       this.router.navigate(['/']);
     }
   }
-}
-
-function formatRuntime(minutes: number | null | undefined): string | null {
-  if (!minutes) return null;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  // just in case if movie is less than an hour so there is no "0h 45m"
-  return h ? `${h}h ${m}m` : `${m}m`;
 }

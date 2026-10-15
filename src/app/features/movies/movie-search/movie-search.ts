@@ -1,6 +1,8 @@
-import { Component, input, linkedSignal, output } from '@angular/core';
+import { Component, inject, input, linkedSignal, output } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { Subject, debounceTime, distinctUntilChanged, map, merge, skip } from 'rxjs';
+
+import { LanguageService } from '../../../core/i18n/language.service';
 
 const TYPING_DEBOUNCE_MS = 400;
 
@@ -9,6 +11,8 @@ const TYPING_DEBOUNCE_MS = 400;
   templateUrl: './movie-search.html',
 })
 export class MovieSearchComponent {
+  protected readonly t = inject(LanguageService).t;
+
   readonly initialQuery = input('');
   readonly queryChange = output<string>();
 

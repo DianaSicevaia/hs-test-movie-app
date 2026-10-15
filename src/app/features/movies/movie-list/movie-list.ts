@@ -1,5 +1,6 @@
 import { Component, OnInit, computed, inject } from '@angular/core';
 
+import { LanguageService } from '../../../core/i18n/language.service';
 import { MovieService } from '../../../core/services/movie.service';
 import { ErrorMessageComponent } from '../../../shared/ui/error-message/error-message';
 import { LoadingSpinnerComponent } from '../../../shared/ui/loading-spinner/loading-spinner';
@@ -19,13 +20,15 @@ import { MovieSearchComponent } from '../movie-search/movie-search';
 export class MovieListComponent implements OnInit {
   private readonly movieService = inject(MovieService);
 
+  protected readonly t = inject(LanguageService).t;
+
   protected readonly movies = this.movieService.movies;
   protected readonly loading = this.movieService.loading;
   protected readonly error = this.movieService.error;
   protected readonly query = this.movieService.query;
 
   protected readonly heading = computed(() =>
-    this.query() ? `Results for “${this.query()}”` : 'Popular movies',
+    this.query() ? this.t().list.resultsFor(this.query()) : this.t().list.popular,
   );
 
   ngOnInit(): void {

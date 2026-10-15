@@ -1,26 +1,26 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 
-import { ApiError } from '../models/api-error';
+import { ApiError, ErrorCode } from '../models/api-error';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) =>
   next(req).pipe(
     catchError((err: unknown) =>
       throwError(() =>
-        err instanceof HttpErrorResponse ? new ApiError(err.status, toErrorMessage(err)) : err,
+        err instanceof HttpErrorResponse ? new ApiError(err.status, toErrorCode(err.status)) : err,
       ),
     ),
   );
 
-function toErrorMessage(err: HttpErrorResponse): string {
-  switch (err.status) {
+function toErrorCode(status: number): ErrorCode {
+  switch (status) {
     case 0:
-      return 'Network error. Check your internet connection.';
+      return 'network';
     case 401:
-      return 'Invalid API token. Check TMDB_ACCESS_TOKEN in .env.';
+      return 'unauthorized';
     case 404:
-      return 'The requested resource was not found.';
+      return 'notFound';
     default:
-      return 'Something went wrong. Please try again later.';
+      return 'unknown';
   }
 }

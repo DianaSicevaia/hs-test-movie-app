@@ -1,4 +1,6 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
+
+import { LanguageService } from '../../../core/i18n/language.service';
 
 @Component({
   selector: 'app-error-message',
@@ -10,12 +12,14 @@ import { Component, input, output } from '@angular/core';
         (click)="retry.emit()"
         class="mt-4 rounded-md bg-amber-600 px-4 py-2 font-medium text-white hover:bg-amber-500"
       >
-        Try again
+        {{ t().common.retry }}
       </button>
     </div>
   `,
 })
 export class ErrorMessageComponent {
+  protected readonly t = inject(LanguageService).t;
+
   readonly message = input.required<string>();
   readonly retry = output<void>();
 }
