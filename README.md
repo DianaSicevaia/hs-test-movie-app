@@ -20,6 +20,9 @@ A small web app for browsing and searching movies, built on **Angular 21** with 
 - **Smart "Back" button.**
   - It returns to the list with your search results and scroll position intact.
   - If the page was opened from a direct link, it goes to the home page instead of leaving the app.
+- **Four languages.** English (default), Russian, Ukrainian and Romanian.
+  - The switcher in the header changes both the interface and the movie data from TMDb (titles, overviews, genres).
+  - Dates and numbers follow the selected language. The choice is remembered between visits.
 - **Loading and error states.** Every request shows a spinner while loading. Errors show a readable message with a **Try again** button.
 - **Responsive and accessible.**
   - The layout works from mobile to wide screens.
@@ -130,13 +133,18 @@ Open http://localhost:4200.
 ```text
 src/app/
 ├── core/                         # App-wide singletons and non-UI code
+│   ├── i18n/
+│   │   ├── language.service.ts        # Current language + translations as signals
+│   │   ├── languages.ts               # Supported languages and their locales
+│   │   └── translations/              # en.ts (source of truth), ru.ts, uk.ts, ro.ts
 │   ├── interceptors/
 │   │   ├── tmdb-auth.interceptor.ts   # Adds the Bearer token to TMDb requests
+│   │   ├── tmdb-language.interceptor.ts # Adds the `language` param to TMDb requests
 │   │   ├── loading.interceptor.ts     # Counts requests in flight (global progress bar)
-│   │   └── error.interceptor.ts       # HttpErrorResponse → ApiError with a readable message
+│   │   └── error.interceptor.ts       # HttpErrorResponse → ApiError with an error code
 │   ├── models/
 │   │   ├── movie.ts                   # TMDb response types
-│   │   └── api-error.ts               # Normalized HTTP error
+│   │   └── api-error.ts               # Normalized HTTP error + error codes
 │   ├── services/
 │   │   ├── movie.service.ts           # API calls + signal-based state
 │   │   └── loading.service.ts         # Global "requests in flight" signal
@@ -156,6 +164,7 @@ src/app/
 │   └── ui/
 │       ├── loading-spinner/
 │       ├── error-message/
+│       ├── language-switcher/         # Language buttons in the header
 │       └── progress-bar/              # Thin top bar driven by LoadingService
 │
 ├── app.config.ts                 # Providers: router, HttpClient, interceptors
@@ -172,7 +181,7 @@ src/app/
 ```ts
 private readonly moviesSignal = signal<Movie[]>([]);
 private readonly loadingSignal = signal(false);
-private readonly errorSignal = signal<string | null>(null);
+private readonly errorSignal = signal<ErrorCode | null>(null);
 
 readonly movies = this.moviesSignal.asReadonly();
 readonly loading = this.loadingSignal.asReadonly();
@@ -220,17 +229,41 @@ readonly id = input.required({ transform: numberAttribute });
 Interceptors handle cross-cutting concerns. Feature state stays in the service:
 
 ```ts
-withInterceptors([tmdbAuthInterceptor, loadingInterceptor, errorInterceptor]);
+withInterceptors([
+  tmdbAuthInterceptor,
+  tmdbLanguageInterceptor,
+  loadingInterceptor,
+  errorInterceptor,
+]);
 ```
 
 - **`loadingInterceptor`** counts requests in flight in `LoadingService`, and a thin progress bar under the header shows the result.
   - `finalize` decrements the counter on success, on error **and on cancellation**, so cancelled search requests don't leave the bar stuck.
   - The bar appears with a short delay, so fast requests don't make it flash.
-- **`errorInterceptor`** turns every `HttpErrorResponse` into an `ApiError { status, message }` with a user-friendly message. Error texts live in one place instead of in every service.
+- **`tmdbLanguageInterceptor`** adds `language=<locale>` to TMDb requests, so the service doesn't have to pass it to every call.
+- **`errorInterceptor`** turns every `HttpErrorResponse` into an `ApiError { status, code }`. The code (`network`, `unauthorized`, `notFound`, `unknown`) doesn't depend on the language. The UI turns it into text from the translations, so an error message is translated on a language switch too.
 
 `MovieService` still has its own `loading` and `error` signals for each area (list / details). That way the list can dim old results while a search is loading, and the details page can show its own spinner.
 
-Some decisions depend on context, so the service makes them itself. For example, a 404 from `/movie/{id}` means **"Movie not found."**.
+Some decisions depend on context, so the service makes them itself. For example, it turns `notFound` from `/movie/{id}` into the more specific `movieNotFound`.
+
+### Languages (i18n)
+
+The app has its own small signal-based i18n instead of a library:
+
+```ts
+readonly language = this.languageSignal.asReadonly();
+readonly t = computed(() => TRANSLATIONS[this.language()]);
+```
+
+- **Runtime switching.** Templates read `t().search.submit`. Because `t` is a signal, every text updates when the language changes, without a page reload. Angular's built-in i18n was not used because it creates a separate build for each language.
+- **Type-safe translations.** `en.ts` is the source of truth and `Translations = typeof en`. If a key is missing in another language, the project doesn't compile.
+- **Texts with parameters** are plain functions: `resultsFor: (query) => ...`.
+- **Movie data.** When the language changes:
+  - `MovieService` reloads the cached list. It remembers which language the list was loaded in, so this also works while the user is on the details page.
+  - The details page reloads its movie.
+- **Dates and numbers** are formatted with `Intl` for the current locale. This way no Angular locale data has to be registered.
+- The selected language is saved in `localStorage` and set on `<html lang>`.
 
 ### API token
 

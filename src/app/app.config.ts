@@ -6,13 +6,19 @@ import { routes } from './app.routes';
 import { errorInterceptor } from './core/interceptors/error.interceptor';
 import { loadingInterceptor } from './core/interceptors/loading.interceptor';
 import { tmdbAuthInterceptor } from './core/interceptors/tmdb-auth.interceptor';
+import { tmdbLanguageInterceptor } from './core/interceptors/tmdb-language.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideHttpClient(
       withFetch(),
-      withInterceptors([tmdbAuthInterceptor, loadingInterceptor, errorInterceptor]),
+      withInterceptors([
+        tmdbAuthInterceptor,
+        tmdbLanguageInterceptor,
+        loadingInterceptor,
+        errorInterceptor,
+      ]),
     ),
     provideRouter(
       routes,

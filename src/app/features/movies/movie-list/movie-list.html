@@ -3,16 +3,16 @@
 
   <h1 class="mb-6 truncate text-2xl font-bold">{{ heading() }}</h1>
 
-  @if (error(); as message) {
-    <app-error-message [message]="message" (retry)="loadMovies()" />
+  @if (error(); as code) {
+    <app-error-message [message]="t().errors[code]" (retry)="loadMovies()" />
   } @else if (loading() && movies().length === 0) {
     <app-loading-spinner />
   } @else if (movies().length === 0) {
     <p class="p-20 text-center text-gray-400">
       @if (query()) {
-        No movies found for “{{ query() }}”.
+        {{ t().list.emptyFor(query()) }}
       } @else {
-        No movies found.
+        {{ t().list.empty }}
       }
     </p>
   } @else {

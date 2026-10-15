@@ -1,7 +1,8 @@
-import { Component, computed, input, signal } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
+import { LanguageService } from '../../../core/i18n/language.service';
 import { Movie } from '../../../core/models/movie';
 import { getPosterUrl } from '../../../core/utils/tmdb-image';
 import { LongPressDirective } from '../../../shared/directives/long-press.directive';
@@ -12,6 +13,8 @@ import { LongPressDirective } from '../../../shared/directives/long-press.direct
   templateUrl: './movie-card.html',
 })
 export class MovieCardComponent {
+  protected readonly t = inject(LanguageService).t;
+
   readonly movie = input.required<Movie>();
 
   /** Full overview opened by long press on touch devices. */
